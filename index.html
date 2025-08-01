@@ -39,15 +39,6 @@
       background: #f2f2f2;
       padding: 10px;
     }
-    #undoBtn {
-      background-color: #ccc;
-      border: none;
-      padding: 6px 12px;
-      cursor: pointer;
-    }
-    #undoBtn:hover {
-      background-color: #bbb;
-    }
   </style>
 </head>
 <body>
@@ -64,8 +55,6 @@
     <input type="text" id="studentIds" placeholder="e.g., SIT-001,SIT-045" />
 
     <button type="submit">Book</button>
-    <button type="button" id="undoBtn">Undo Last Booking</button>
-
     <div id="errors"></div>
   </form>
 
@@ -91,13 +80,13 @@
 
   <script>
     /*
-      JS Features Used:
-      - Variables & Data Types: let, const, arrays, strings, numbers, stack
-      - Control Structures: if/else logic for validation and rule enforcement
-      - Loops: for, for...of used in rendering and insight computation
-      - Functions: clean single-purpose helpers for validation, rendering, logic
-      - Events: form submission, undo click, remove booking delegation
-      - DOM Manipulation: createElement, appendChild, textContent, innerHTML
+      JS Usage Summary:
+      - Variables & Data Types: let, const, arrays, strings, numbers
+      - Control Structures: if/else, switch, for loops
+      - Loops: for, for...of, nested loops
+      - Functions: defined for parsing, validation, rendering, insights
+      - Events: form submission, remove button via event delegation
+      - DOM Manipulation: createElement, appendChild, textContent, addEventListener
     */
 
     const pods = [
@@ -112,16 +101,15 @@
     ];
 
     let bookings = [...initialBookings];
-    let bookingHistoryStack = []; // <-- New: stack to track undo history
     let duplicateAttempts = 0;
 
     const podSelect = document.getElementById("podSelect");
     const form = document.getElementById("bookingForm");
-    const undoBtn = document.getElementById("undoBtn");
     const errorsDiv = document.getElementById("errors");
     const bookingTable = document.getElementById("bookingTable");
     const insightsDiv = document.getElementById("insights");
 
+    // Populate select options dynamically
     for (let pod of pods) {
       const option = document.createElement("option");
       option.value = pod.id;
@@ -129,15 +117,16 @@
       podSelect.appendChild(option);
     }
 
+    // Helper functions
     function parseStudentIds(input) {
       return input
         .split(",")
         .map(id => id.trim().toUpperCase())
-        .filter(id => id);
+        .filter(id => id); // removes empty entries
     }
 
     function isWithinOperatingHours(time) {
-      return time >= "08:00" && time < "20:00"; // Strict === comparisons are enforced
+      return time >= "08:00" && time < "20:00"; // === used for strict comparison
     }
 
     function findBooking(podId, time) {
@@ -165,8 +154,9 @@
     function renderBookings() {
       bookingTable.innerHTML = "";
       for (let i = 0; i < bookings.length; i++) {
-        const booking = bookings[i];
         const row = document.createElement("tr");
+        const booking = bookings[i];
+
         row.innerHTML = `
           <td>${i + 1}</td>
           <td>${booking.podId}</td>
@@ -182,7 +172,7 @@
 
     function recomputeInsights() {
       let totalBookings = bookings.length;
-      let studentList = [];
+      let studentSet = [];
       let hourCounts = {};
       let podUsage = {};
       let podSeats = {};
@@ -194,10 +184,11 @@
 
       for (let booking of bookings) {
         for (let student of booking.students) {
-          if (!studentList.includes(student)) {
-            studentList.push(student);
+          if (!studentSet.includes(student)) {
+            studentSet.push(student);
           }
         }
+
         hourCounts[booking.time] = (hourCounts[booking.time] || 0) + booking.students.length;
         podUsage[booking.podId][booking.time] = true;
         podSeats[booking.podId] += booking.students.length;
@@ -205,30 +196,31 @@
 
       let busiestHour = null;
       let maxStudents = 0;
-      for (let time in hourCounts) {
-        if (hourCounts[time] > maxStudents) {
-          maxStudents = hourCounts[time];
-          busiestHour = time;
+      for (let hour in hourCounts) {
+        if (hourCounts[hour] > maxStudents) {
+          maxStudents = hourCounts[hour];
+          busiestHour = hour;
         }
       }
 
       let fillRates = "";
       for (let pod of pods) {
         let usedSlots = Object.keys(podUsage[pod.id]).length;
-        let maxSeats = usedSlots * pod.capacity;
-        let rate = maxSeats > 0 ? (podSeats[pod.id] / maxSeats) * 100 : 0;
+        let totalCapacity = usedSlots * pod.capacity;
+        let rate = totalCapacity > 0 ? (podSeats[pod.id] / totalCapacity) * 100 : 0;
         fillRates += `<div>${pod.id}: ${roundTo1Decimal(rate)}%</div>`;
       }
 
       insightsDiv.innerHTML = `
         <div>Total bookings today: ${totalBookings}</div>
-        <div>Total unique students: ${studentList.length}</div>
+        <div>Total unique students: ${studentSet.length}</div>
         <div>Busiest hour: ${busiestHour || "N/A"}</div>
         <div>Fill-rate per pod: ${fillRates}</div>
         <div>Duplicate attempts blocked: ${duplicateAttempts}</div>
       `;
     }
 
+    // Booking submission
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       errorsDiv.textContent = "";
@@ -249,29 +241,32 @@
       }
 
       const existingBooking = findBooking(podId, time);
-      const allStudents = existingBooking ? existingBooking.students.slice() : [];
+      if (existingBooking && existingBooking.students.length + students.length > 4) {
+        errorsDiv.textContent = "Capacity exceeded for this pod and time.";
+        return;
+      }
 
+      const allStudents = existingBooking ? existingBooking.students.slice() : [];
       for (let student of students) {
         if (allStudents.includes(student)) {
           duplicateAttempts++;
           errorsDiv.textContent = `Student ${student} already booked in this pod and hour.`;
           return;
         }
+
         if (hasCrossPodClash(student, time, podId)) {
           duplicateAttempts++;
-          errorsDiv.textContent = `Student ${student} is already booked in another pod at the same time.`;
+          errorsDiv.textContent = `Student ${student} already booked in another pod at the same time.`;
           return;
         }
-      }
 
-      // All checks passed, save booking to history stack
-      const newBooking = { podId, time, students: [...students] };
-      bookingHistoryStack.push(newBooking);
+        allStudents.push(student);
+      }
 
       if (existingBooking) {
         existingBooking.students.push(...students);
       } else {
-        bookings.push(newBooking);
+        bookings.push({ podId, time, students });
       }
 
       document.getElementById("studentIds").value = "";
@@ -280,33 +275,12 @@
       renderBookings();
     });
 
-    // Remove individual booking via event delegation
+    // Remove functionality using event delegation
     bookingTable.addEventListener("click", function (e) {
       if (e.target.classList.contains("removeBtn")) {
         const index = parseInt(e.target.dataset.index);
         bookings.splice(index, 1);
         renderBookings();
-      }
-    });
-
-    // Undo last booking
-    undoBtn.addEventListener("click", function () {
-      if (bookingHistoryStack.length > 0) {
-        const lastBooking = bookingHistoryStack.pop();
-        // Remove the exact booking from the bookings array
-        for (let i = bookings.length - 1; i >= 0; i--) {
-          if (
-            bookings[i].podId === lastBooking.podId &&
-            bookings[i].time === lastBooking.time &&
-            JSON.stringify(bookings[i].students) === JSON.stringify(lastBooking.students)
-          ) {
-            bookings.splice(i, 1);
-            break;
-          }
-        }
-        renderBookings();
-      } else {
-        errorsDiv.textContent = "Nothing to undo.";
       }
     });
 
