@@ -1,85 +1,189 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Study Pod Booking Widget</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --navy: #012a4a;
+      --blue: #014f86;
+      --light: #f8f9fa;
+      --form-bg: #ffffff;
+      --border: #dee2e6;
+      --accent: #ffc300;
+      --primary-btn: linear-gradient(to right, #002855, #004e89);
+      --primary-btn-hover: linear-gradient(to right, #001d3d, #003566);
+      --shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
+      font-family: 'Inter', sans-serif;
+      background-color: var(--light);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
     }
-    h1, h2 {
-      color: #00274d;
+
+    .container {
+      margin-top: 40px;
+      background: var(--form-bg);
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      width: 100%;
+      max-width: 900px;
+      border-left: 6px solid var(--accent);
     }
+
+    h1 {
+      font-size: 26px;
+      color: var(--navy);
+      margin-bottom: 30px;
+    }
+
     label {
       display: block;
-      margin: 10px 0 5px;
+      margin: 20px 0 8px;
+      color: var(--blue);
+      font-weight: 600;
     }
-    select, input[type="time"], input[type="text"], button {
-      margin-bottom: 10px;
-      padding: 6px;
+
+    select,
+    input[type="time"],
+    input[type="text"] {
       width: 100%;
-      max-width: 300px;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background-color: #fdfdfd;
+      font-size: 15px;
+      transition: border-color 0.2s ease;
     }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--blue);
+    }
+
+    .helper-text {
+      font-size: 12px;
+      color: #6c757d;
+      margin-top: 4px;
+    }
+
+    button {
+      background: var(--primary-btn);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      margin-top: 30px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: var(--primary-btn-hover);
+    }
+
     #errors {
-      color: red;
-      margin-bottom: 10px;
+      background-color: #f8d7da;
+      color: #842029;
+      padding: 10px 14px;
+      border-left: 4px solid #842029;
+      border-radius: 6px;
+      margin-top: 16px;
+      font-weight: 500;
     }
-    table, th, td {
-      border: 1px solid #ccc;
-      border-collapse: collapse;
-      padding: 6px;
-    }
+
     table {
       width: 100%;
-      margin-top: 20px;
+      margin-top: 30px;
+      border-collapse: collapse;
+      background-color: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
     }
+
+    th, td {
+      padding: 14px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background-color: #e9ecef;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
     .insight-box {
-      margin-top: 20px;
-      background: #f2f2f2;
-      padding: 10px;
+      margin-top: 30px;
+      background-color: #edf6f9;
+      padding: 20px;
+      border-left: 4px solid var(--blue);
+      border-radius: 8px;
+    }
+
+    .insight-box h2 {
+      margin-top: 0;
+      color: var(--navy);
+    }
+
+    .insight-box div {
+      margin-bottom: 6px;
     }
   </style>
 </head>
 <body>
-  <h1>Study Pod Booking Widget</h1>
+  <div class="container">
+    <h1>Book a Study Pod</h1>
+    <form id="bookingForm">
+      <label for="podSelect">Select Pod:</label>
+      <select id="podSelect"></select>
 
-  <form id="bookingForm">
-    <label for="podSelect">Select Pod:</label>
-    <select id="podSelect"></select>
+      <label for="timeInput">Time (1-hour blocks):</label>
+      <input type="time" id="timeInput" step="3600">
 
-    <label for="timeInput">Time (HH:MM):</label>
-    <input type="time" id="timeInput" step="3600" />
+      <label for="studentIds">Student IDs (comma-separated):</label>
+      <input type="text" id="studentIds" placeholder="e.g., SIT-001, SMC-210, SST-101">
+      <div class="helper-text">Enter up to 4 student IDs separated by commas</div>
 
-    <label for="studentIds">Student IDs (comma-separated):</label>
-    <input type="text" id="studentIds" placeholder="e.g., SIT-001,SIT-045" />
+      <button type="submit">BOOK A POD</button>
+      <div id="errors"></div>
+    </form>
 
-    <button type="submit">Book</button>
-    <div id="errors"></div>
-  </form>
+    <h2>All Bookings</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Pod</th>
+          <th>Time</th>
+          <th># Students</th>
+          <th>Student IDs</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="bookingTable"></tbody>
+    </table>
 
-  <h2>All Bookings</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Pod</th>
-        <th>Time</th>
-        <th># Students</th>
-        <th>Student IDs</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="bookingTable"></tbody>
-  </table>
-
-  <div class="insight-box">
-    <h2>Insights</h2>
-    <div id="insights"></div>
+    <div class="insight-box">
+      <h2>Insights</h2>
+      <div id="insights"></div>
+    </div>
   </div>
 
   <script>
-    /*
+     /*
       JS Usage Summary:
       - Variables & Data Types: let, const, arrays, strings, numbers
       - Control Structures: if/else, switch, for loops
@@ -88,7 +192,6 @@
       - Events: form submission, remove button via event delegation
       - DOM Manipulation: createElement, appendChild, textContent, addEventListener
     */
-
     const pods = [
       { id: "POD-A", capacity: 4 },
       { id: "POD-B", capacity: 4 },
@@ -109,7 +212,6 @@
     const bookingTable = document.getElementById("bookingTable");
     const insightsDiv = document.getElementById("insights");
 
-    // Populate select options dynamically
     for (let pod of pods) {
       const option = document.createElement("option");
       option.value = pod.id;
@@ -117,34 +219,23 @@
       podSelect.appendChild(option);
     }
 
-    // Helper functions
     function parseStudentIds(input) {
       return input
         .split(",")
         .map(id => id.trim().toUpperCase())
-        .filter(id => id); // removes empty entries
+        .filter(id => id);
     }
 
     function isWithinOperatingHours(time) {
-      return time >= "08:00" && time < "20:00"; // === used for strict comparison
+      return time >= "08:00" && time < "20:00";
     }
 
     function findBooking(podId, time) {
-      for (let booking of bookings) {
-        if (booking.podId === podId && booking.time === time) {
-          return booking;
-        }
-      }
-      return null;
+      return bookings.find(booking => booking.podId === podId && booking.time === time);
     }
 
     function hasCrossPodClash(studentId, time, podId) {
-      for (let booking of bookings) {
-        if (booking.time === time && booking.podId !== podId && booking.students.includes(studentId)) {
-          return true;
-        }
-      }
-      return false;
+      return bookings.some(booking => booking.time === time && booking.podId !== podId && booking.students.includes(studentId));
     }
 
     function roundTo1Decimal(value) {
@@ -153,10 +244,8 @@
 
     function renderBookings() {
       bookingTable.innerHTML = "";
-      for (let i = 0; i < bookings.length; i++) {
+      bookings.forEach((booking, i) => {
         const row = document.createElement("tr");
-        const booking = bookings[i];
-
         row.innerHTML = `
           <td>${i + 1}</td>
           <td>${booking.podId}</td>
@@ -166,7 +255,7 @@
           <td><button data-index="${i}" class="removeBtn">Remove</button></td>
         `;
         bookingTable.appendChild(row);
-      }
+      });
       recomputeInsights();
     }
 
@@ -177,39 +266,28 @@
       let podUsage = {};
       let podSeats = {};
 
-      for (let pod of pods) {
+      pods.forEach(pod => {
         podUsage[pod.id] = {};
         podSeats[pod.id] = 0;
-      }
+      });
 
-      for (let booking of bookings) {
-        for (let student of booking.students) {
-          if (!studentSet.includes(student)) {
-            studentSet.push(student);
-          }
-        }
-
+      bookings.forEach(booking => {
+        booking.students.forEach(student => {
+          if (!studentSet.includes(student)) studentSet.push(student);
+        });
         hourCounts[booking.time] = (hourCounts[booking.time] || 0) + booking.students.length;
         podUsage[booking.podId][booking.time] = true;
         podSeats[booking.podId] += booking.students.length;
-      }
+      });
 
-      let busiestHour = null;
-      let maxStudents = 0;
-      for (let hour in hourCounts) {
-        if (hourCounts[hour] > maxStudents) {
-          maxStudents = hourCounts[hour];
-          busiestHour = hour;
-        }
-      }
+      let busiestHour = Object.keys(hourCounts).reduce((a, b) => hourCounts[a] > hourCounts[b] ? a : b, null);
 
-      let fillRates = "";
-      for (let pod of pods) {
+      let fillRates = pods.map(pod => {
         let usedSlots = Object.keys(podUsage[pod.id]).length;
         let totalCapacity = usedSlots * pod.capacity;
         let rate = totalCapacity > 0 ? (podSeats[pod.id] / totalCapacity) * 100 : 0;
-        fillRates += `<div>${pod.id}: ${roundTo1Decimal(rate)}%</div>`;
-      }
+        return `<div>${pod.id}: ${roundTo1Decimal(rate)}%</div>`;
+      }).join("");
 
       insightsDiv.innerHTML = `
         <div>Total bookings today: ${totalBookings}</div>
@@ -220,8 +298,7 @@
       `;
     }
 
-    // Booking submission
-    form.addEventListener("submit", function (e) {
+    form.addEventListener("submit", e => {
       e.preventDefault();
       errorsDiv.textContent = "";
 
@@ -246,20 +323,18 @@
         return;
       }
 
-      const allStudents = existingBooking ? existingBooking.students.slice() : [];
+      const allStudents = existingBooking ? [...existingBooking.students] : [];
       for (let student of students) {
         if (allStudents.includes(student)) {
           duplicateAttempts++;
           errorsDiv.textContent = `Student ${student} already booked in this pod and hour.`;
           return;
         }
-
         if (hasCrossPodClash(student, time, podId)) {
           duplicateAttempts++;
           errorsDiv.textContent = `Student ${student} already booked in another pod at the same time.`;
           return;
         }
-
         allStudents.push(student);
       }
 
@@ -275,8 +350,7 @@
       renderBookings();
     });
 
-    // Remove functionality using event delegation
-    bookingTable.addEventListener("click", function (e) {
+    bookingTable.addEventListener("click", e => {
       if (e.target.classList.contains("removeBtn")) {
         const index = parseInt(e.target.dataset.index);
         bookings.splice(index, 1);
